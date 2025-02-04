@@ -1,6 +1,8 @@
 package com.example.JWT.config;
 
+import com.example.JWT.filter.JWTFilter;
 import com.example.JWT.service.StaffDetailService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationProvider;
@@ -10,9 +12,12 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
 public class SecurityConfig {
+    @Autowired
+    private JWTFilter jwtFilter;
 
     private final StaffDetailService staffDetailService;
 
@@ -24,17 +29,18 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
         return httpSecurity.authorizeHttpRequests(
                         authorize -> {
-                            // Permit access to static resources and login, home, and error pages
                             authorize.requestMatchers("/css/**", "/js/**", "/images/**").permitAll();
-                            authorize.requestMatchers("/login", "/error/**", "/logout", "/", "/signup").permitAll();
+                            authorize.requestMatchers("/auth/login", "/error/**", "/logout", "/", "/auth/signup").permitAll();
                             // Restrict access to admin and user pages based on roles
                             authorize.requestMatchers("/admin/**").hasRole("ADMIN");
                             authorize.requestMatchers("/user/**").hasRole("USER");
                             // All other requests require authentication
                             authorize.anyRequest().authenticated();
                         }
-                ).formLogin(formLogin -> formLogin
-                        .loginPage("/login")  // Custom login page
+                )
+                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
+                .formLogin(formLogin -> formLogin
+                        .loginPage("/auth/login")  // Custom login page
                         .defaultSuccessUrl("/success", true)  // Redirect to home after successful login
                         .permitAll())
                 .logout(logout -> logout.logoutUrl("/logout")
@@ -45,10 +51,6 @@ public class SecurityConfig {
                 .build();
     }
 
-    @Bean
-    public UserDetailsService userDetailsService() {
-        return staffDetailService;
-    }
 
     @Bean
     public AuthenticationProvider authenticationProvider() {

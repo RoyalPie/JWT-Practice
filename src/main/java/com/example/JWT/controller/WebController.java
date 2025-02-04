@@ -2,46 +2,29 @@ package com.example.JWT.controller;
 
 import com.example.JWT.entity.Staff;
 import com.example.JWT.service.StaffService;
+import com.example.JWT.util.JWTUtil;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
 
-@Controller
+@RestController
+@RequestMapping("/auth")
 public class WebController {
-    @Autowired
-    private StaffService staffService;
-
-    @GetMapping("/signup")
-    public String showSignUpForm(Model model) {
-        model.addAttribute("staff", new Staff());
-        return "signup";
-    }
-    @PostMapping("/signup")
-    public String handleSignUp(Staff staff, Model model) {
-        if (staffService.findByUsername(staff.getUsername()).isPresent()) {
-            model.addAttribute("error", "Username already exists. Please choose a different one.");
-            return "signup";
-        }
-
-        staffService.saveUser(staff);
-
-        return "redirect:/login";
-    }
+//    @Autowired
+//    private JWTUtil jwtUtil;
 
     @RequestMapping("/")
     public void notLoginRedirect(HttpServletRequest request, HttpServletResponse response, Authentication authResult) throws IOException, ServletException {
-        if (authResult == null || authResult.getPrincipal() == null || authResult.getPrincipal().equals("anonymousUser")) {
-            response.sendRedirect("/login");
+        if (authResult == null || authResult instanceof AnonymousAuthenticationToken) {
+            response.sendRedirect("/auth/login");
         } else {
             response.sendRedirect("/success");
         }
@@ -61,11 +44,19 @@ public class WebController {
         }
     }
 
-    @GetMapping("/login")
-    public String login() {
-        return "login";
-    }
-
+//    @GetMapping("/auth/login")
+//    public String loginPage() {
+//        return "login";
+//    }
+//    @PostMapping("/auth/login")
+//    public String login(@RequestParam String username, @RequestParam String password){
+//        if ("user".equals(username) && "password".equals(password)) {
+//            return jwtUtil.generateToken(username);
+//        }
+//        else {
+//            throw new RuntimeException("Invalid credentials");
+//        }
+//    }
     @GetMapping("/admin/home")
     public String adminHome(HttpSession session, Model model) {
         String username = (String) session.getAttribute("username");
